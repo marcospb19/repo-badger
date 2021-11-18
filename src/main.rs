@@ -9,8 +9,10 @@ use repo::fetch_repo;
 
 #[get("/{username}/{repo}/badge.html")]
 async fn badge(
-    web::Path((username, repo)): web::Path<(String, String)>,
+    request: web::Path<(String, String)>,
 ) -> actix_web::Result<String> {
+    let (username, repo) = request.into_inner();
+    dbg!(&username, &repo);
     let client = client::build_client().map_err(anyhow_to_internal_error)?;
     let repo = fetch_repo(&client, &username, &repo)
         .await
