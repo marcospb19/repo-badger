@@ -1,5 +1,6 @@
 mod client;
 mod error;
+mod json;
 mod repo;
 
 use actix_web::{get, web, App, HttpServer};

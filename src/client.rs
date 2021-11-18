@@ -5,7 +5,9 @@ use reqwest::{
     Client,
 };
 
+#[allow(clippy::declare_interior_mutable_const)]
 const API_REST_V3: HeaderValue = HeaderValue::from_static("application/vnd.github.v3+json");
+#[allow(clippy::declare_interior_mutable_const)]
 const USER_AGENT: HeaderValue = HeaderValue::from_static("repobadger");
 
 pub fn build_client() -> Result<Client> {

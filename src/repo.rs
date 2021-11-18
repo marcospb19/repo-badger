@@ -3,6 +3,8 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
+use crate::json::JsonValueExt;
+
 #[derive(Serialize, Deserialize)]
 pub struct Repository {
     /// The owner or organization this repository
@@ -41,47 +43,6 @@ impl Repository {
             is_archived: json.get_bool("archived")?,
         }
         .into()
-    }
-}
-
-trait JsonValueExt {
-    fn get_owner(&self) -> Option<String>;
-    fn get_str(&self, _: &str) -> Option<String>;
-    fn get_u64(&self, _: &str) -> Option<u64>;
-    fn get_bool(&self, _: &str) -> Option<bool>;
-}
-
-impl JsonValueExt for JsonValue {
-    fn get_owner(&self) -> Option<String> {
-        match self {
-            JsonValue::Object(obj) => {
-                // `owner` is a map itself, which contains a `login` field
-                let owner = obj.get("owner")?;
-                owner.get("login")?.as_str().map(ToOwned::to_owned)
-            }
-            _ => None,
-        }
-    }
-
-    fn get_str(&self, name: &str) -> Option<String> {
-        match self {
-            JsonValue::Object(obj) => obj[name].as_str().map(ToOwned::to_owned),
-            _ => None,
-        }
-    }
-
-    fn get_u64(&self, name: &str) -> Option<u64> {
-        match self {
-            JsonValue::Object(obj) => obj[name].as_u64(),
-            _ => None,
-        }
-    }
-
-    fn get_bool(&self, name: &str) -> Option<bool> {
-        match self {
-            JsonValue::Object(obj) => obj[name].as_bool(),
-            _ => None,
-        }
     }
 }
 
