@@ -3,10 +3,52 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
+#[derive(Serialize, Deserialize)]
+pub struct Repository {
+    /// The owner or organization this repository
+    /// belongs to
+    pub username: String,
+    /// The name of this repository
+    pub name: String,
+    /// Repository description
+    pub description: String,
+    /// The language this project is written in
+    ///
+    /// Optional since the GitHub API may return `null` if the repository
+    /// is Markdown only
+    pub language: Option<String>,
+    /// The amount of stars this project has
+    pub stars: u64,
+    /// The amount of forks this project has
+    pub forks: u64,
+    /// Set to true if this repository is archived
+    pub is_archived: bool,
+}
+
+impl Repository {
+    /// Attempts to deserialize a Repository from a JSON
+    pub fn from_json(json: JsonValue) -> Option<Self> {
+        // The JsonValue must be JsonValue::Object
+        json.is_object().then(|| ())?;
+
+        Self {
+            username: json.get_owner()?,
+            name: json.get_str("name")?,
+            description: json.get_str("description")?,
+            language: json.get_str("language"),
+            stars: json.get_u64("stargazers_count")?,
+            forks: json.get_u64("forks")?,
+            is_archived: json.get_bool("archived")?,
+        }
+        .into()
+    }
+}
+
 trait JsonValueExt {
     fn get_owner(&self) -> Option<String>;
     fn get_str(&self, _: &str) -> Option<String>;
     fn get_u64(&self, _: &str) -> Option<u64>;
+    fn get_bool(&self, _: &str) -> Option<bool>;
 }
 
 impl JsonValueExt for JsonValue {
@@ -34,6 +76,13 @@ impl JsonValueExt for JsonValue {
             _ => None,
         }
     }
+
+    fn get_bool(&self, name: &str) -> Option<bool> {
+        match self {
+            JsonValue::Object(obj) => obj[name].as_bool(),
+            _ => None,
+        }
+    }
 }
 
 async fn make_get_request(client: &Client, url: String) -> Result<JsonValue> {
@@ -45,44 +94,6 @@ async fn make_get_request(client: &Client, url: String) -> Result<JsonValue> {
     let response = response.text().await?;
 
     Ok(serde_json::from_str(&response)?)
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Repository {
-    /// The owner or organization this repository
-    /// belongs to
-    pub username: String,
-    /// The name of this repository
-    pub name: String,
-    /// Repository description
-    pub description: String,
-    /// The language this project is written in
-    ///
-    /// Optional since the GitHub API may return `null` if the repository
-    /// is Markdown only
-    pub language: Option<String>,
-    /// The amount of stars this project has
-    pub stars: u64,
-    /// The amount of forks this project has
-    pub forks: u64,
-}
-
-impl Repository {
-    /// Attempts to deserialize a Repository from a JSON
-    pub fn from_json(json: JsonValue) -> Option<Self> {
-        // The JsonValue must be JsonValue::Object
-        json.is_object().then(|| ())?;
-
-        Self {
-            username: json.get_owner()?,
-            name: json.get_str("name")?,
-            description: json.get_str("description")?,
-            language: json.get_str("language"),
-            stars: json.get_u64("stargazers_count")?,
-            forks: json.get_u64("forks")?,
-        }
-        .into()
-    }
 }
 
 /// Fetches a repository from GitHub given its owner/org. and name
@@ -234,6 +245,7 @@ mod tests {
         assert_eq!(repo.stars, 135);
         assert_eq!(repo.forks, 2);
         assert_eq!(repo.language.as_deref(), Some("Rust"));
+        assert_eq!(repo.is_archived, false);
     }
 
     #[test]
