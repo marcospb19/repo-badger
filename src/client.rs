@@ -11,10 +11,10 @@ const USER_AGENT: HeaderValue = HeaderValue::from_static("repobadger");
 pub fn build_client() -> Result<Client> {
     let mut headers = HeaderMap::new();
 
-    headers.insert(
-        ACCEPT,
-        API_REST_V3,
-    );
+    headers.insert(ACCEPT, API_REST_V3);
 
-    Ok(Client::builder().default_headers(headers).user_agent(USER_AGENT).build()?)
+    Ok(Client::builder()
+        .default_headers(headers)
+        .user_agent(USER_AGENT)
+        .build()?)
 }

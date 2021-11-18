@@ -4,11 +4,23 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
 trait JsonValueExt {
+    fn get_owner(&self) -> Option<String>;
     fn get_str(&self, _: &str) -> Option<String>;
     fn get_u64(&self, _: &str) -> Option<u64>;
 }
 
 impl JsonValueExt for JsonValue {
+    fn get_owner(&self) -> Option<String> {
+        match self {
+            JsonValue::Object(obj) => {
+                // `owner` is a map itself, which contains a `login` field
+                let owner = obj.get("owner")?;
+                owner.get("login")?.as_str().map(ToOwned::to_owned)
+            }
+            _ => None,
+        }
+    }
+
     fn get_str(&self, name: &str) -> Option<String> {
         dbg!(name);
         match self {
@@ -18,6 +30,7 @@ impl JsonValueExt for JsonValue {
     }
 
     fn get_u64(&self, name: &str) -> Option<u64> {
+        dbg!(name);
         match self {
             JsonValue::Object(obj) => obj[name].as_u64(),
             _ => None,
@@ -32,7 +45,7 @@ async fn make_get_request(client: &Client, url: String) -> Result<JsonValue> {
         response.error_for_status_ref()?;
     }
     let response = response.text().await?;
-    dbg!(&response);
+    // dbg!(&response);
     Ok(serde_json::from_str(&response)?)
 }
 
@@ -46,14 +59,14 @@ pub struct Repository {
     /// Repository description
     pub description: String,
     /// The language this project is written in
-    /// 
+    ///
     /// Optional since the GitHub API may return `null` if the repository
     /// is Markdown only
     pub language: Option<String>,
     /// The amount of stars this project has
     pub stars: u64,
     /// The amount of forks this project has
-    pub forks: u64
+    pub forks: u64,
 }
 
 impl Repository {
@@ -62,26 +75,14 @@ impl Repository {
         json.is_object().then(|| ())?;
 
         Self {
-            username: json.get_str("owner")?,
+            username: json.get_owner()?,
             name: json.get_str("name")?,
-            description: json.get_str("bio/description/idk")?,
+            description: json.get_str("description")?,
             language: json.get_str("language"),
-            stars: json.get_u64("stars")?,
+            stars: json.get_u64("stargazers_count")?,
             forks: json.get_u64("forks")?,
         }
         .into()
-        // ja volto
-        // mandei uma imagem no telegram
-
-        // thread 'main' panicked at 'System is not running'
-        // kkkkkkkkkkkkkkkkkk
-
-
-        // ah tem uma MAIN.RS KKKKK
-        // vc consegue ver meu terminal ?
-        
-        // não dá panic de imediato
-        // dá panic quando recebe a chamada
     }
 }
 
@@ -90,7 +91,7 @@ impl Repository {
 /// Docs: https://docs.github.com/en/rest/reference/repos#get-a-repository
 pub async fn fetch_repo(client: &Client, username: &str, repo: &str) -> Result<Repository> {
     let url = build_repos_url(username, repo);
-    dbg!(username, repo);
+    // dbg!(username, repo);
     let response = make_get_request(client, url).await?;
     let repository =
         Repository::from_json(response).with_context(|| "Failed to deserialize repository data")?;

@@ -8,11 +8,9 @@ use error::{anyhow_to_bad_request, anyhow_to_internal_error};
 use repo::fetch_repo;
 
 #[get("/{username}/{repo}/badge.html")]
-async fn badge(
-    request: web::Path<(String, String)>,
-) -> actix_web::Result<String> {
+async fn badge(request: web::Path<(String, String)>) -> actix_web::Result<String> {
     let (username, repo) = request.into_inner();
-    dbg!(&username, &repo);
+    println!("Received request for {}/{}", username, repo);
     let client = client::build_client().map_err(anyhow_to_internal_error)?;
     let repo = fetch_repo(&client, &username, &repo)
         .await
