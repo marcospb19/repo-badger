@@ -68,6 +68,7 @@ pub struct Repository {
 }
 
 impl Repository {
+    /// Attempts to deserialize a Repository from a JSON
     pub fn from_json(json: JsonValue) -> Option<Self> {
         // The JsonValue must be JsonValue::Object
         json.is_object().then(|| ())?;
@@ -100,7 +101,8 @@ fn build_repos_url(username: &str, repository: &str) -> String {
 }
 
 #[cfg(test)]
-mod repo_deser_tests {
+mod tests {
+    use super::build_repos_url;
     use super::Repository;
 
     const RESPONSE: &str = r###"
@@ -232,5 +234,15 @@ mod repo_deser_tests {
         assert_eq!(repo.stars, 135);
         assert_eq!(repo.forks, 2);
         assert_eq!(repo.language.as_deref(), Some("Rust"));
+    }
+
+    #[test]
+    fn builds_repository_url_correctly() {
+        assert_eq!(
+            "https://api.github.com/repos/marcospb19/dotao",
+            build_repos_url("marcospb19", "dotao")
+        );
+
+        assert_eq!("https://api.github.com/repos//", build_repos_url("", ""));
     }
 }
