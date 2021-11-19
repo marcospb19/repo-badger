@@ -1,49 +1,39 @@
 pub use serde_json::Value as JsonValue;
 
-pub trait JsonValueExt {
+pub trait JsonObjectExt {
+    fn get(&self, _: &str) -> Option<&JsonValue>;
     fn get_owner(&self) -> Option<String>;
     fn get_str(&self, _: &str) -> Option<String>;
     fn get_u64(&self, _: &str) -> Option<u64>;
     fn get_bool(&self, _: &str) -> Option<bool>;
 }
 
-impl JsonValueExt for JsonValue {
+impl JsonObjectExt for JsonValue {
+    fn get(&self, key: &str) -> Option<&JsonValue> {
+        self.as_object()?.get(key)
+    }
+
     fn get_owner(&self) -> Option<String> {
-        match self {
-            JsonValue::Object(obj) => {
-                // `owner` is a map itself, which contains a `login` field
-                let owner = obj.get("owner")?;
-                owner.get("login")?.as_str().map(ToOwned::to_owned)
-            }
-            _ => None,
-        }
+        let owner = self.get("owner")?;
+        owner.get_str("login")
     }
 
     fn get_str(&self, name: &str) -> Option<String> {
-        match self {
-            JsonValue::Object(obj) => obj.get(name)?.as_str().map(ToOwned::to_owned),
-            _ => None,
-        }
+        self.get(name)?.as_str().map(ToOwned::to_owned)
     }
 
     fn get_u64(&self, name: &str) -> Option<u64> {
-        match self {
-            JsonValue::Object(obj) => obj.get(name)?.as_u64(),
-            _ => None,
-        }
+        self.get(name)?.as_u64()
     }
 
     fn get_bool(&self, name: &str) -> Option<bool> {
-        match self {
-            JsonValue::Object(obj) => obj.get(name)?.as_bool(),
-            _ => None,
-        }
+        self.get(name)?.as_bool()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::JsonValueExt;
+    use super::JsonObjectExt;
 
     const RESPONSE: &str = r###"
     {

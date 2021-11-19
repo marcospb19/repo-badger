@@ -3,7 +3,7 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value as JsonValue;
 
-use crate::json::JsonValueExt;
+use crate::json::JsonObjectExt;
 
 #[derive(Serialize, Deserialize)]
 pub struct Repository {
